@@ -3,6 +3,7 @@
     #include <conio.h>
     #define mapx 20
     #define mapy 12
+    //testgita
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
