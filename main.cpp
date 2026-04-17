@@ -3,7 +3,6 @@
     #include <conio.h>
     #define mapx 20
     #define mapy 12
-    //testgita
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
@@ -29,7 +28,7 @@
                                  {0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
 
@@ -84,7 +83,6 @@
         cat->texture = SDL_CreateTextureFromSurface(renderer, cat->catload);
         cat->x = 100;
         cat->y = 100;
-
         cat->w = 200;
         cat->h = 200;
         cat->vecx = 0;
@@ -118,7 +116,7 @@
         
     }
     bool catcollision_left(ogcat *cat,map *map){
-        if(map->maptab[((cat->y)/100)][(cat->x)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x))/100]==1){
+        if(map->maptab[((cat->y)/100)][(cat->x+42)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x+42))/100]==1){
             return true;
         }else return false;
     }
@@ -128,7 +126,8 @@
         {
          cat->vecy += 1;
         }else{
-            //fix?
+            int cat_correction = (cat->y + cat->h) %100;
+            cat->y -= cat_correction;
              cat->vecy = 0;
              
         }
@@ -147,7 +146,7 @@
             
         }
         if (keyboard[SDL_SCANCODE_A]) {
-           // if(!catcollision_left(cat,map))
+            if(!catcollision_left(cat,map))
             cat->x -= 10;
         }
         if (keyboard[SDL_SCANCODE_D]) {
