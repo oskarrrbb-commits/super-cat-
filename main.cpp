@@ -25,11 +25,11 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
+                                 {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
 
 
@@ -108,7 +108,7 @@
 
     bool catcollision_down(ogcat *cat,map *map) {
         
-        if(map->maptab[((cat->y+cat->h)/100)][(cat->x-42)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x-42)+cat->w)/100]==1){
+        if(map->maptab[((cat->y+cat->h)/100)][(cat->x+57)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x-57)+cat->w)/100]==1){
             return true;
         }else return false;
         
@@ -116,7 +116,12 @@
         
     }
     bool catcollision_left(ogcat *cat,map *map){
-        if(map->maptab[((cat->y)/100)][(cat->x+42)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x+42))/100]==1){
+        if(map->maptab[((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==1 ){
+            return true;
+        }else return false;
+    }
+    bool catcollision_right(ogcat *cat,map *map){
+        if(map->maptab[((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==1 ){
             return true;
         }else return false;
     }
@@ -127,6 +132,7 @@
          cat->vecy += 1;
         }else{
             int cat_correction = (cat->y + cat->h) %100;
+            cat_correction-=2;
             cat->y -= cat_correction;
              cat->vecy = 0;
              
@@ -140,14 +146,18 @@
     }
     void catmover(ogcat *cat,map *map) {
         gravity(cat,map);
+        if(catcollision_left(cat,map)){cat->x += 10;}
+        if(catcollision_right(cat,map)){cat->x -= 10;}
+
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if (keyboard[SDL_SCANCODE_SPACE]) {
             catjump(cat,map);
             
         }
         if (keyboard[SDL_SCANCODE_A]) {
-            if(!catcollision_left(cat,map))
             cat->x -= 10;
+            
+           
         }
         if (keyboard[SDL_SCANCODE_D]) {
             cat->x += 10;
