@@ -3,6 +3,7 @@
     #include <conio.h>
     #define mapx 20
     #define mapy 12
+    #define rooms 2
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
@@ -19,7 +20,8 @@
         SDL_Surface* dirtload=nullptr;
         SDL_Texture* dirt_undertexture=nullptr;
         SDL_Surface* dirt_underload=nullptr;
-        int maptab[mapy][mapx]={ {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+        int maptab[rooms][mapy][mapx]={{
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -30,10 +32,31 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                                  {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
                                  {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
-                                 {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2},
+                                 {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+                                 },
+                                 {
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
+                                 {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
+                                 {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+
+
+
+
+                                }
 
 
                                 };
+
+        int activeroom=0;
     };
     struct background
     {
@@ -56,14 +79,51 @@
         map->dirt_undertexture = SDL_CreateTextureFromSurface(renderer, map->dirt_underload);
 
     }
-    void drawmap(map *map, SDL_Renderer *renderer) {
+        bool catcollision_down(ogcat *cat,map *map) {
+        
+        if(map->maptab[map->activeroom][((cat->y+cat->h)/100)][(cat->x+57)/100]==1 || map->maptab[map->activeroom][((cat->y+cat->h)/100)][((cat->x-57)+cat->w)/100]==1){
+            return true;
+        }else return false;
+        
+             
+        
+    }
+    bool catcollision_left(ogcat *cat,map *map){
+        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==1 ){
+            return true;
+        }else return false;
+    }
+    bool catcollision_right(ogcat *cat,map *map){
+        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==1 ){
+            return true;
+        }else return false;
+    }
+    bool catcollison_up(ogcat *cat,map*map){
+        if(map->maptab[map->activeroom][((cat->y+50)/100)][(cat->x+57)/100]==1 || map->maptab[map->activeroom][((cat->y+50)/100)][((cat->x-57)+cat->w)/100]==1){
+            return true;
+        }else return false;
+        
+    }
+    void swaproom(map *map,ogcat *cat){
+        if(cat->x+cat->w>=2000){
+            map->activeroom++;
+            cat->x=0;
+        }
+        if(cat->x<0){
+            map->activeroom--;
+            cat->x=1750;
+        }
+
+    }
+    void drawmap(map *map, SDL_Renderer *renderer,ogcat *cat) {
+                swaproom(map,cat);
                 for(int i=0;i<mapy;i++){
                     for(int j=0;j<mapx;j++){
-                           if(map->maptab[i][j]==1){
+                           if(map->maptab[map->activeroom][i][j]==1){
                                 SDL_Rect pos{j*100,i*100,100,100};
                                 SDL_RenderCopy(renderer, map->dirttexture, NULL, &pos);
                            } 
-                            if(map->maptab[i][j]==2){
+                            if(map->maptab[map->activeroom][i][j]==2){
                                   SDL_Rect pos{j*100,i*100,100,100};
                                   SDL_RenderCopy(renderer, map->dirt_undertexture, NULL, &pos);
                             }
@@ -81,7 +141,7 @@
         SDL_SetColorKey(catload, SDL_TRUE, colorkey);
         cat->catload = catload;
         cat->texture = SDL_CreateTextureFromSurface(renderer, cat->catload);
-        cat->x = 100;
+        cat->x = 300;
         cat->y = 100;
         cat->w = 200;
         cat->h = 200;
@@ -106,37 +166,28 @@
 
     }
 
-    bool catcollision_down(ogcat *cat,map *map) {
+
+    void cat_correct(ogcat *cat,map *map){
+         int cat_correction = (cat->y + cat->h) %100;
+            cat->y -= cat_correction;
+            cat->vecy = 0;
         
-        if(map->maptab[((cat->y+cat->h)/100)][(cat->x+57)/100]==1 || map->maptab[((cat->y+cat->h)/100)][((cat->x-57)+cat->w)/100]==1){
-            return true;
-        }else return false;
-        
-             
         
     }
-    bool catcollision_left(ogcat *cat,map *map){
-        if(map->maptab[((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==1 ){
-            return true;
-        }else return false;
-    }
-    bool catcollision_right(ogcat *cat,map *map){
-        if(map->maptab[((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==1 ){
-            return true;
-        }else return false;
-    }
-    
     void gravity(ogcat *cat,map *map) {
+        if(catcollison_up(cat,map)){
+            if(cat->vecy<0){
+            cat->vecy = (cat->vecy*(-1))/2;
+        }
+        }
         if(!catcollision_down(cat,map))
         {
          cat->vecy += 1;
         }else{
-            int cat_correction = (cat->y + cat->h) %100;
-            cat_correction-=2;
-            cat->y -= cat_correction;
-             cat->vecy = 0;
-             
+            cat_correct(cat,map);
+            
         }
+
     }
     void catjump(ogcat *cat,map *map) {
         if(catcollision_down(cat,map)){
@@ -148,7 +199,7 @@
         gravity(cat,map);
         if(catcollision_left(cat,map)){cat->x += 10;}
         if(catcollision_right(cat,map)){cat->x -= 10;}
-
+        swaproom(map,cat);
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if (keyboard[SDL_SCANCODE_SPACE]) {
             catjump(cat,map);
@@ -193,7 +244,7 @@
         
         backgrounddraw(&bg,renderer);
         drawcat(&cat, renderer);
-        drawmap(&map, renderer);
+        drawmap(&map, renderer,&cat);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(30);
