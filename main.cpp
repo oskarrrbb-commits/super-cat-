@@ -15,7 +15,7 @@
         int isstanding;
         int jump_possible=1;
         int jumped=0;
-        int time_lastjump= SDL_GetTicks();
+        int time_lastjump=0;
 
     };
     struct map
@@ -175,7 +175,7 @@
          int cat_correction = (cat->y + cat->h) %100;
             cat->y -= cat_correction;
             cat->vecy = 0;
-        
+            
         
     }
     void gravity(ogcat *cat,map *map) {
@@ -195,31 +195,29 @@
     }
 
     void catjump(ogcat *cat,map *map) {
-        if(catcollision_down(cat,map)&&cat->jump_possible==1){
-        cat->vecy = -30;
+        int time_now=SDL_GetTicks();
+        if(((time_now-(cat->time_lastjump)>1200))){
+            cat->jump_possible=1;
+            cat->time_lastjump=time_now;
+        }
+            
+        
+        if(cat->jump_possible==1&&catcollision_down(cat,map)){
+        cat->vecy = -25;
+        cat->jump_possible=0;
         }
 
     }
 
-    void jumpcooldown(ogcat *cat,map* map){
-        int time = SDL_GetTicks();
-        if(cat->jumped==1&&catcollision_down(cat,map)){
-            cat->jumped=0;
-            cat->jump_possible=0;
-            cat->time_lastjump=time-cat->time_lastjump;
-            if(cat->time_lastjump>5000) cat->jump_possible=1;
-        }
-    }
+
     void catmover(ogcat *cat,map *map) {
         gravity(cat,map);
         if(catcollision_left(cat,map)){cat->x += 10;}
         if(catcollision_right(cat,map)){cat->x -= 10;}
         swaproom(map,cat);
-        jumpcooldown(cat,map);
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
-        if (keyboard[SDL_SCANCODE_SPACE]) {
+        if ((keyboard[SDL_SCANCODE_SPACE])) {
             catjump(cat,map);
-            cat->jumped=1;
         }
         if (keyboard[SDL_SCANCODE_A]) {
             cat->x -= 10;
