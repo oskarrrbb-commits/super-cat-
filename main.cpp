@@ -14,8 +14,8 @@
         int vecx, vecy;
         int isstanding;
         int jump_possible=1;
-        int jumped=0;
         int time_lastjump=0;
+        int lifes=3;
 
     };
     struct map
@@ -24,6 +24,8 @@
         SDL_Surface* dirtload=nullptr;
         SDL_Texture* dirt_undertexture=nullptr;
         SDL_Surface* dirt_underload=nullptr;
+        SDL_Texture* spikestexture=nullptr;
+        SDL_Surface* spikesload=nullptr;
         int maptab[rooms][mapy][mapx]={{
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -33,9 +35,9 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                                 {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
-                                 {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
+                                 {0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1},
+                                 {0,0,0,0,0,0,1,1,1,2,1,3,3,3,3,3,2,0,0,1},
+                                 {1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,2,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  },
                                  {
@@ -43,11 +45,11 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,1},
                                  {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
                                  {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
@@ -82,6 +84,11 @@
         map->dirt_underload=SDL_LoadBMP("assets/map/dirt_under.bmp");
         map->dirt_undertexture = SDL_CreateTextureFromSurface(renderer, map->dirt_underload);
 
+        map->spikesload=SDL_LoadBMP("assets/map/spikes.bmp");
+        Uint32 colorkey = SDL_MapRGB(map->spikesload->format, 0, 255, 0);
+        SDL_SetColorKey(map->spikesload, SDL_TRUE, colorkey);
+        map->spikestexture = SDL_CreateTextureFromSurface(renderer, map->spikesload);
+
     }
         bool catcollision_down(ogcat *cat,map *map) {
         
@@ -93,12 +100,12 @@
         
     }
     bool catcollision_left(ogcat *cat,map *map){
-        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==1 ){
+        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==1|| map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+57)/100]==2){
             return true;
         }else return false;
     }
     bool catcollision_right(ogcat *cat,map *map){
-        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==1 ){
+        if(map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==1||map->maptab[map->activeroom][((cat->y+((cat->h)/2))/100)][(cat->x+cat->w-57)/100]==2 ){
             return true;
         }else return false;
     }
@@ -130,6 +137,10 @@
                             if(map->maptab[map->activeroom][i][j]==2){
                                   SDL_Rect pos{j*100,i*100,100,100};
                                   SDL_RenderCopy(renderer, map->dirt_undertexture, NULL, &pos);
+                            }
+                            if(map->maptab[map->activeroom][i][j]==3){
+                                  SDL_Rect pos{j*100,i*100,100,100};
+                                  SDL_RenderCopy(renderer, map->spikestexture, NULL, &pos);
                             }
                     }
                 }
@@ -167,7 +178,8 @@
         SDL_FreeSurface(bg->load);
         SDL_FreeSurface(map->dirt_underload);
         SDL_DestroyTexture(map->dirt_undertexture);
-
+        SDL_FreeSurface(map->spikesload);
+        SDL_DestroyTexture(map->spikestexture);
     }
 
 
@@ -208,13 +220,32 @@
         }
 
     }
+    void cat_death_animaiton(ogcat *cat,map *map){
+        cat->x=300;
+        cat->y=100;
+        cat->vecy=0;
+        SDL_Delay(1000);
 
-
+    }
+    bool cat_dead(ogcat *cat,map *map){
+        if(map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3){
+            return true;
+        }else return false;
+    }
+    bool game_over(ogcat *cat){
+        if(cat->lifes<=0){
+            return true;
+        }else return false;
+    }
     void catmover(ogcat *cat,map *map) {
         gravity(cat,map);
         if(catcollision_left(cat,map)){cat->x += 10;}
         if(catcollision_right(cat,map)){cat->x -= 10;}
         swaproom(map,cat);
+        if(cat_dead(cat,map)){
+        cat->lifes--;
+        cat_death_animaiton(cat,map);
+        }
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if ((keyboard[SDL_SCANCODE_SPACE])) {
             catjump(cat,map);
@@ -261,6 +292,9 @@
         drawmap(&map, renderer,&cat);
 
         SDL_RenderPresent(renderer);
+        if(game_over(&cat)){
+            break;
+        }
         SDL_Delay(30);
     }
         SDL_DestroyWindow(window);
