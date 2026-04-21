@@ -3,7 +3,7 @@
     #include <conio.h>
     #define mapx 20
     #define mapy 12
-    #define rooms 2
+    #define rooms 4
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
@@ -16,6 +16,20 @@
         int jump_possible=1;
         int time_lastjump=0;
         int lifes=3;
+
+    };
+    struct frog
+    {
+        SDL_Texture* frogtexture=nullptr;
+        SDL_Surface* frogload=nullptr;
+        int x,y,w=100,h=100;
+        SDL_Rect pos{x,y,w,h};
+        int vecx=0, vecy=0;
+        int ogy=0;
+        bool active=false;
+        bool jump=true;
+        int jumptick=0;
+
 
     };
     struct map
@@ -49,20 +63,45 @@
                                  {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-                                 {0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,4,0,0,0,1},
                                  {0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,1},
                                  {1,1,1,1,1,1,1,1,1,2,2,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
-
-
-
-
-                                }
+                                },
+                                {
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1},
+                                 {0,0,0,0,0,0,1,1,1,2,1,3,3,3,3,3,2,0,0,1},
+                                 {1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,2,1,1,1},
+                                 {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+                                 },
+                                 {
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+                                 {0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1},
+                                 {0,0,0,0,0,0,1,1,1,2,1,3,3,3,3,3,2,0,0,1},
+                                 {1,1,1,1,1,1,2,2,2,2,2,1,1,1,1,1,2,1,1,1},
+                                 {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
+                                 }
 
 
                                 };
 
         int activeroom=0;
+        bool roomswitch=false;
     };
     struct background
     {
@@ -89,7 +128,28 @@
         SDL_SetColorKey(map->spikesload, SDL_TRUE, colorkey);
         map->spikestexture = SDL_CreateTextureFromSurface(renderer, map->spikesload);
 
+       
     }
+    void frogloader(frog *frog, SDL_Renderer *renderer) {
+        frog->frogload=SDL_LoadBMP("assets/frog/frog.bmp");
+        Uint32 colorkey = SDL_MapRGB(frog->frogload->format, 0, 255, 0);
+        SDL_SetColorKey(frog->frogload, SDL_TRUE, colorkey);
+        frog->frogtexture = SDL_CreateTextureFromSurface(renderer, frog->frogload);
+
+    }
+
+
+        void swaproom(map *map,ogcat *cat){
+        if(cat->x+cat->w>=2000){
+            map->activeroom++;
+            cat->x=0;
+        }
+        if(cat->x<0){
+            map->activeroom--;
+            cat->x=1750;
+        }
+    }
+
         bool catcollision_down(ogcat *cat,map *map) {
         
         if(map->maptab[map->activeroom][((cat->y+cat->h)/100)][(cat->x+57)/100]==1 || map->maptab[map->activeroom][((cat->y+cat->h)/100)][((cat->x-57)+cat->w)/100]==1){
@@ -115,16 +175,53 @@
         }else return false;
         
     }
-    void swaproom(map *map,ogcat *cat){
-        if(cat->x+cat->w>=2000){
-            map->activeroom++;
-            cat->x=0;
+    void frogdrawnew(frog *frog, SDL_Renderer *renderer,map *map,ogcat *cat){ 
+        
+                for(int i=0;i<mapy;i++){
+                    for(int j=0;j<mapx;j++){
+                           
+                            if(map->maptab[map->activeroom][i][j]==4){
+                                if(frog->active){
+                                    return;
+                                }
+                                frog->x=j*100;
+                                frog->y=i*100;
+                                frog->ogy=frog->y;
+                                frog->w=100;
+                                frog->h=100;
+                                frog->pos = {frog->x, frog->y, frog->w, frog->h};
+                                frog->active=true;
+                                return;
+                            }                               
+                            
+                    }
+                }
+        frog->active=false;
+    }
+    
+    void frogdraw(frog *frog, SDL_Renderer *renderer) {
+        if(frog->active){
+        if(frog->jumptick<30){
+            frog->y-=10;
+        }else{
+             if(frog->jumptick<60){
+            frog->y+=10;
+        
+        }else{
+            if(frog->jumptick>100)
+            frog->jumptick=0;
+            frog->y=frog->ogy;
+            
         }
-        if(cat->x<0){
-            map->activeroom--;
-            cat->x=1750;
         }
+        frog->jumptick++;
 
+            frog->pos = {frog->x, frog->y, frog->w, frog->h};
+            SDL_RenderCopy(renderer, frog->frogtexture, NULL, &frog->pos);
+
+
+        
+    }
     }
     void drawmap(map *map, SDL_Renderer *renderer,ogcat *cat) {
                 swaproom(map,cat);
@@ -148,8 +245,7 @@
 
 
     }
-   
-    
+
     void catloader(ogcat *cat, SDL_Renderer *renderer) {
         SDL_Surface *catload = SDL_LoadBMP("assets/cat/ogcat.bmp");
         Uint32 colorkey = SDL_MapRGB(catload->format, 0, 255, 0);
@@ -169,7 +265,7 @@
     void drawcat(ogcat *cat, SDL_Renderer *renderer) {
         SDL_RenderCopy(renderer, cat->texture, NULL, &cat->pos);
     }
-    void destroyer(ogcat *cat,map *map, background *bg) {
+    void destroyer(ogcat *cat,map *map, background *bg,frog *frog) {
         SDL_DestroyTexture(cat->texture);
         SDL_FreeSurface(cat->catload);
         SDL_FreeSurface(map->dirtload);
@@ -180,6 +276,8 @@
         SDL_DestroyTexture(map->dirt_undertexture);
         SDL_FreeSurface(map->spikesload);
         SDL_DestroyTexture(map->spikestexture);
+        SDL_FreeSurface(frog->frogload);
+        SDL_DestroyTexture(frog->frogtexture);
     }
 
 
@@ -270,10 +368,11 @@
         ogcat cat;
         map map;
         background bg;
+        frog frog;
         catloader(&cat,renderer);
         maploader(&map,renderer);
         backgroundloader(&bg,renderer);
-
+        frogloader(&frog,renderer);
         SDL_Event e;
     while (true)
     {
@@ -290,15 +389,19 @@
         backgrounddraw(&bg,renderer);
         drawcat(&cat, renderer);
         drawmap(&map, renderer,&cat);
+        frogdrawnew(&frog,renderer,&map,&cat);
+        frogdraw(&frog,renderer);
 
         SDL_RenderPresent(renderer);
+
+
         if(game_over(&cat)){
             break;
         }
         SDL_Delay(30);
     }
         SDL_DestroyWindow(window);
-        destroyer(&cat,&map,&bg);
+        destroyer(&cat,&map,&bg,&frog);
 
         SDL_Quit();
         return 1;
