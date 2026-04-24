@@ -12,17 +12,24 @@
     #define LEG_HITBOX_X 57
     #define birdspeed 20
     #define enable_bird_to_spawn_since_map 1
-                
+    #define DEATH_TIMER 60
+
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
         SDL_Surface* catload=nullptr;
+        SDL_Texture* texture_dead=nullptr;
+        SDL_Surface* catload_dead=nullptr;
+        
         int x,y,w,h;
         SDL_Rect pos{x,y,w,h};
         int vecx, vecy;
         bool jump_possible=true;
+        bool isdying=false;
+        bool canmove=true;
         int time_lastjump=0;
         int lifes=Lifes;
+        int death_timer=DEATH_TIMER;
 
     };
     struct frog
@@ -326,10 +333,15 @@
 
     void catloader(ogcat *cat, SDL_Renderer *renderer) {
         SDL_Surface *catload = SDL_LoadBMP("assets/cat/ogcat.bmp");
-        Uint32 colorkey = SDL_MapRGB(catload->format, 0, 255, 0);
-        SDL_SetColorKey(catload, SDL_TRUE, colorkey);
+        SDL_Surface *catload_dead = SDL_LoadBMP("assets/cat/ogcat_dead.bmp");
+        Uint32 colorkey_1 = SDL_MapRGB(catload->format, 0, 255, 0);
+        Uint32 colorkey_2 = SDL_MapRGB(catload_dead->format, 0, 255, 0);
+        SDL_SetColorKey(catload, SDL_TRUE, colorkey_1);
+        SDL_SetColorKey(catload_dead, SDL_TRUE, colorkey_2);
         cat->catload = catload;
         cat->texture = SDL_CreateTextureFromSurface(renderer, cat->catload);
+        cat->catload_dead = catload_dead;
+        cat->texture_dead = SDL_CreateTextureFromSurface(renderer, cat->catload_dead);
         cat->x = 300;
         cat->y = 100;
         cat->w = 200;
@@ -338,12 +350,32 @@
         cat->vecy = 0;
         cat->pos = {cat->x, cat->y, cat->w, cat->h}; 
     }
-    void drawcat(ogcat *cat, SDL_Renderer *renderer) {
+    bool cat_dies(ogcat *cat,map *map){
+        if(map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3){
+            return true;
+        }else return false;
+    }
+    void drawcat(ogcat *cat, SDL_Renderer *renderer,map *map) {
+        if(cat->isdying){
+                SDL_RenderCopy(renderer, cat->texture_dead, NULL, &cat->pos);
+                cat->death_timer--;
+                cat->canmove=false;
+                if(cat->death_timer<=0){
+                cat->isdying = false;
+                cat->canmove=true;
+                cat->x = 300;  
+                cat->y = 100;
+                cat->vecy = 0;       
+             }
+        }else{
         SDL_RenderCopy(renderer, cat->texture, NULL, &cat->pos);
+        }
     }
     void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird) {
         SDL_DestroyTexture(cat->texture);
+        SDL_DestroyTexture(cat->texture_dead);
         SDL_FreeSurface(cat->catload);
+        SDL_FreeSurface(cat->catload_dead);
         SDL_FreeSurface(map->dirtload);
         SDL_DestroyTexture(map->dirttexture);
         SDL_DestroyTexture(bg->texture);
@@ -398,31 +430,22 @@
         }
 
     }
-    void cat_death_animaiton(ogcat *cat,map *map){
-        cat->x=300;
-        cat->y=100;
-        cat->vecy=0;
-        SDL_Delay(1000);
 
-    }
-    bool cat_dead(ogcat *cat,map *map){
-        if(map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3){
-            return true;
-        }else return false;
-    }
     bool game_over(ogcat *cat){
         if(cat->lifes<=0){
             return true;
         }else return false;
     }
-    void catmover(ogcat *cat,map *map) {
+    void catmover(ogcat *cat,map *map,SDL_Renderer *renderer){
+        if(!cat->canmove) return;
         gravity(cat,map);
         if(catcollision_left(cat,map)){cat->x += 10;}
         if(catcollision_right(cat,map)){cat->x -= 10;}
         swaproom(map,cat);
-        if(cat_dead(cat,map)){
-        cat->lifes--;
-        cat_death_animaiton(cat,map);
+        if(cat_dies(cat,map)&&!cat->isdying){
+            cat->isdying=true;
+            cat->death_timer=DEATH_TIMER;
+            cat->lifes--;
         }
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if ((keyboard[SDL_SCANCODE_SPACE])) {
@@ -438,7 +461,7 @@
         }
 
         cat->x += cat->vecx;
-        cat->y += cat->vecy;
+        cat->y += cat->vecy;    
         cat->pos = {cat->x, cat->y, cat->w, cat->h};
     }
     int main(int argv, char **args) {
@@ -467,10 +490,10 @@
                 
         }
         SDL_RenderClear(renderer);
-        catmover(&cat,&map);
+        catmover(&cat,&map,renderer);
         
         backgrounddraw(&bg,renderer);
-        drawcat(&cat, renderer);
+        drawcat(&cat, renderer,&map);
         drawmap(&map, renderer,&cat);
         frogdrawnew(&frog,renderer,&map,&cat);
         frogdraw(&frog,renderer);
