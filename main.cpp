@@ -13,7 +13,7 @@
     #define birdspeed 20
     #define enable_bird_to_spawn_since_map 1
     #define DEATH_TIMER 60
-
+    #define GOD_MODE_TIMER 100
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
@@ -30,6 +30,8 @@
         int time_lastjump=0;
         int lifes=Lifes;
         int death_timer=DEATH_TIMER;
+        int godmode=false;
+        int godmodetimer=GOD_MODE_TIMER;
 
     };
     struct frog
@@ -70,13 +72,15 @@
         SDL_Surface* dirt_underload=nullptr;
         SDL_Texture* spikestexture=nullptr;
         SDL_Surface* spikesload=nullptr;
+        SDL_Texture* elixirtexture=nullptr;
+        SDL_Surface* elixirload=nullptr;
         int maptab[rooms][mapy][mapx]={{
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                                  {0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1},
@@ -131,13 +135,26 @@
                                 };
 
         int activeroom=0;
-        bool roomswitch=false;
+        bool swapped=false;
     };
     struct background
     {
         SDL_Texture* texture=nullptr;
         SDL_Surface* load=nullptr;
     };
+    struct Stats{
+        SDL_Texture* boxtexture=nullptr;
+        SDL_Surface* boxload=nullptr;
+
+    };
+    void Statsloader(Stats *stats, SDL_Renderer *renderer) {
+        stats->boxload=SDL_LoadBMP("assets/map/stats.bmp");
+        stats->boxtexture = SDL_CreateTextureFromSurface(renderer, stats->boxload);
+    }
+   void statsdraw(Stats *stats, SDL_Renderer *renderer) {
+        SDL_Rect pos{0,0,400,200};
+        SDL_RenderCopy(renderer, stats->boxtexture, NULL, &pos);
+    }
     void backgroundloader(background *bg, SDL_Renderer *renderer) {
         bg->load=SDL_LoadBMP("assets/map/background.bmp");
         bg->texture = SDL_CreateTextureFromSurface(renderer, bg->load);
@@ -158,6 +175,10 @@
         SDL_SetColorKey(map->spikesload, SDL_TRUE, colorkey);
         map->spikestexture = SDL_CreateTextureFromSurface(renderer, map->spikesload);
 
+        map->elixirload=SDL_LoadBMP("assets/map/elixir.bmp");
+        Uint32 colorkey_2 = SDL_MapRGB(map->elixirload->format, 0, 255, 0);
+        SDL_SetColorKey(map->elixirload, SDL_TRUE, colorkey_2);
+        map->elixirtexture = SDL_CreateTextureFromSurface(renderer, map->elixirload);        
        
     }
     void frogloader(frog *frog, SDL_Renderer *renderer) {
@@ -176,6 +197,13 @@
         Uint32 colorkey = SDL_MapRGB(bird->load->format, 0, 255, 0);
         SDL_SetColorKey(bird->load, SDL_TRUE, colorkey);
         bird->texture = SDL_CreateTextureFromSurface(renderer, bird->load);
+    }
+    void birdkiller(bird* bird){
+        if(bird->active==false){
+            bird->x=0;
+            bird->y=0;
+            bird->vecx=0;
+        }
     }
     bool spawnbird(bird *bird,map *map){
         if(bird->active){
@@ -203,9 +231,25 @@
             return false;
         
     }
-    void birddraw(bird *bird, SDL_Renderer *renderer,map *map) {
-        
+    bool swaproom(map *map,ogcat *cat){
+        if(cat->x+cat->w>=2000){
+            map->activeroom++;
+            cat->x=0;
+            return true;
+        }
+        if(cat->x<0){
+            map->activeroom--;
+            cat->x=1750;
+            return true;
+        }
+        return false;
+    }
+    void birddraw(bird *bird, SDL_Renderer *renderer,map *map,ogcat *cat) {
+        birdkiller(bird);
         spawnbird(bird,map);
+        if(map->swapped){
+                bird->active=false;
+        }
         if(bird->active){
             bird->x=bird->x+bird->vecx;
             bird->pos = {bird->x, bird->y, bird->w, bird->h};
@@ -217,16 +261,7 @@
         }
     
     
-    void swaproom(map *map,ogcat *cat){
-        if(cat->x+cat->w>=2000){
-            map->activeroom++;
-            cat->x=0;
-        }
-        if(cat->x<0){
-            map->activeroom--;
-            cat->x=1750;
-        }
-    }
+  
     bool catcollision_down(ogcat *cat,map *map) {
         
         if(map->maptab[map->activeroom][((cat->y+cat->h)/100)][(cat->x+LEG_HITBOX_X)/100]==1 || map->maptab[map->activeroom][((cat->y+cat->h)/100)][((cat->x-LEG_HITBOX_X)+cat->w)/100]==1){
@@ -308,8 +343,7 @@
         
     }
     }
-    void drawmap(map *map, SDL_Renderer *renderer,ogcat *cat) {
-                swaproom(map,cat);
+    void drawmap(map *map, SDL_Renderer *renderer,ogcat *cat) {            
                 for(int i=0;i<mapy;i++){
                     for(int j=0;j<mapx;j++){
                            if(map->maptab[map->activeroom][i][j]==1){
@@ -323,6 +357,10 @@
                             if(map->maptab[map->activeroom][i][j]==3){
                                   SDL_Rect pos{j*100,i*100,100,100};
                                   SDL_RenderCopy(renderer, map->spikestexture, NULL, &pos);
+                            }
+                            if(map->maptab[map->activeroom][i][j]==8){
+                                  SDL_Rect pos{j*100,i*100,100,100};
+                                  SDL_RenderCopy(renderer, map->elixirtexture, NULL, &pos);
                             }
                     }
                 }
@@ -350,11 +388,21 @@
         cat->vecy = 0;
         cat->pos = {cat->x, cat->y, cat->w, cat->h}; 
     }
-    bool cat_dies(ogcat *cat,map *map){
-        if(map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3){
+    bool cat_dies(ogcat *cat,map *map,bird *bird,frog *frog){
+        SDL_Rect bird_rect = bird->pos;
+        SDL_Rect cat_rect = cat->pos;
+        SDL_Rect frog_rect = frog->pos;
+
+        if(bird->active)     return SDL_HasIntersection(&bird_rect, &cat_rect);
+        if(frog->active)     return SDL_HasIntersection(&frog_rect, &cat_rect);
+
+        if((map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3))
             return true;
-        }else return false;
+            
+        
+         return false;
     }
+    
     void drawcat(ogcat *cat, SDL_Renderer *renderer,map *map) {
         if(cat->isdying){
                 SDL_RenderCopy(renderer, cat->texture_dead, NULL, &cat->pos);
@@ -370,8 +418,10 @@
         }else{
         SDL_RenderCopy(renderer, cat->texture, NULL, &cat->pos);
         }
+        if(cat->godmodetimer>0) cat->godmodetimer--;
+        if(cat->godmodetimer==0) cat->godmode=false;
     }
-    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird) {
+    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats) {
         SDL_DestroyTexture(cat->texture);
         SDL_DestroyTexture(cat->texture_dead);
         SDL_FreeSurface(cat->catload);
@@ -390,6 +440,10 @@
         SDL_DestroyTexture(frog->kingfrogtexture);
         SDL_DestroyTexture(bird->texture);
         SDL_FreeSurface(bird->load);
+        SDL_FreeSurface(map->elixirload);
+        SDL_DestroyTexture(map->elixirtexture);
+        SDL_FreeSurface(stats->boxload);
+        SDL_DestroyTexture(stats->boxtexture);
     }
 
 
@@ -436,17 +490,26 @@
             return true;
         }else return false;
     }
-    void catmover(ogcat *cat,map *map,SDL_Renderer *renderer){
+    void cat_death_check(ogcat *cat,map *map,bird *bird,frog *frog){
+        if(cat_dies(cat,map,bird,frog)&&!cat->isdying&&!cat->godmode){
+        cat->isdying=true;
+        cat->death_timer=DEATH_TIMER;
+        cat->godmodetimer=GOD_MODE_TIMER;
+        cat->godmode=true;
+        cat->lifes--;
+    }
+    }
+    void catmover(ogcat *cat,map *map,SDL_Renderer *renderer,frog *frog,bird *bird){
         if(!cat->canmove) return;
         gravity(cat,map);
         if(catcollision_left(cat,map)){cat->x += 10;}
         if(catcollision_right(cat,map)){cat->x -= 10;}
-        swaproom(map,cat);
-        if(cat_dies(cat,map)&&!cat->isdying){
-            cat->isdying=true;
-            cat->death_timer=DEATH_TIMER;
-            cat->lifes--;
-        }
+        if(swaproom(map,cat)){
+            map->swapped=true;
+        }else map->swapped=false;
+        
+        cat_death_check(cat,map,bird,frog);
+        
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if ((keyboard[SDL_SCANCODE_SPACE])) {
             catjump(cat,map);
@@ -473,11 +536,13 @@
         background bg;
         frog frog;
         bird bird;
+        Stats stats;
         catloader(&cat,renderer);
         maploader(&map,renderer);
         backgroundloader(&bg,renderer);
         frogloader(&frog,renderer);
         birdloader(&bird,renderer);
+        Statsloader(&stats,renderer);
         SDL_Event e;
         srand(time(NULL));
         while (true)
@@ -490,15 +555,15 @@
                 
         }
         SDL_RenderClear(renderer);
-        catmover(&cat,&map,renderer);
+        catmover(&cat,&map,renderer,&frog,&bird);
         
         backgrounddraw(&bg,renderer);
         drawcat(&cat, renderer,&map);
         drawmap(&map, renderer,&cat);
         frogdrawnew(&frog,renderer,&map,&cat);
         frogdraw(&frog,renderer);
-        birddraw(&bird,renderer,&map);
-
+        birddraw(&bird,renderer,&map,&cat);
+        statsdraw(&stats,renderer);
         SDL_RenderPresent(renderer);
 
 
@@ -508,7 +573,7 @@
         SDL_Delay(30);
     }
         SDL_DestroyWindow(window);
-        destroyer(&cat,&map,&bg,&frog,&bird);
+        destroyer(&cat,&map,&bg,&frog,&bird,&stats);
 
         SDL_Quit();
         return 1;
