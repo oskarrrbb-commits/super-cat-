@@ -14,25 +14,36 @@
     #define enable_bird_to_spawn_since_map 1
     #define DEATH_TIMER 60
     #define GOD_MODE_TIMER 100
+    #define CAT_RESP_X 100
+    #define CAT_RESP_Y 100
+    #define CAT_W 200
+    #define CAT_H 200
+    #define SWORD_W 100
+    #define SWORD_H 200
+    #define SWORD_DURATION 10
+    #define SWORD_COOLDOWN 50
     struct ogcat
     {
         SDL_Texture* texture=nullptr;
         SDL_Surface* catload=nullptr;
         SDL_Texture* texture_dead=nullptr;
         SDL_Surface* catload_dead=nullptr;
-        
-        int x,y,w,h;
+        SDL_Texture* texture_sword=nullptr;
+        SDL_Surface* catload_sword=nullptr;      
+        int x=CAT_RESP_X,y=CAT_RESP_Y,w=CAT_W,h=CAT_H;
         SDL_Rect pos{x,y,w,h};
         int vecx, vecy;
         bool jump_possible=true;
         bool isdying=false;
         bool canmove=true;
+        bool isattacking=false;
+        int attacktick=SWORD_DURATION;
         int time_lastjump=0;
         int lifes=Lifes;
         int death_timer=DEATH_TIMER;
         int godmode=false;
         int godmodetimer=GOD_MODE_TIMER;
-
+        SDL_Rect swordpos{x+w,y,SWORD_W,SWORD_H};
     };
     struct frog
     {
@@ -80,7 +91,7 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
                                  {0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0,1},
@@ -152,7 +163,7 @@
         stats->boxtexture = SDL_CreateTextureFromSurface(renderer, stats->boxload);
     }
    void statsdraw(Stats *stats, SDL_Renderer *renderer) {
-        SDL_Rect pos{0,0,400,200};
+        SDL_Rect pos{0,0,400,300};
         SDL_RenderCopy(renderer, stats->boxtexture, NULL, &pos);
     }
     void backgroundloader(background *bg, SDL_Renderer *renderer) {
@@ -235,11 +246,14 @@
         if(cat->x+cat->w>=2000){
             map->activeroom++;
             cat->x=0;
+            printf("room +");
             return true;
         }
         if(cat->x<0){
             map->activeroom--;
             cat->x=1750;
+                        printf("room -");
+
             return true;
         }
         return false;
@@ -372,18 +386,20 @@
     void catloader(ogcat *cat, SDL_Renderer *renderer) {
         SDL_Surface *catload = SDL_LoadBMP("assets/cat/ogcat.bmp");
         SDL_Surface *catload_dead = SDL_LoadBMP("assets/cat/ogcat_dead.bmp");
+        SDL_Surface *catload_sword = SDL_LoadBMP("assets/cat/sword.bmp");
         Uint32 colorkey_1 = SDL_MapRGB(catload->format, 0, 255, 0);
         Uint32 colorkey_2 = SDL_MapRGB(catload_dead->format, 0, 255, 0);
+        Uint32 colorkey_3 = SDL_MapRGB(catload_sword->format, 0, 255, 0);
+
         SDL_SetColorKey(catload, SDL_TRUE, colorkey_1);
         SDL_SetColorKey(catload_dead, SDL_TRUE, colorkey_2);
+        SDL_SetColorKey(catload_sword, SDL_TRUE, colorkey_3);
         cat->catload = catload;
         cat->texture = SDL_CreateTextureFromSurface(renderer, cat->catload);
         cat->catload_dead = catload_dead;
         cat->texture_dead = SDL_CreateTextureFromSurface(renderer, cat->catload_dead);
-        cat->x = 300;
-        cat->y = 100;
-        cat->w = 200;
-        cat->h = 200;
+        cat->catload_sword = catload_sword;
+        cat->texture_sword = SDL_CreateTextureFromSurface(renderer, cat->catload_sword);
         cat->vecx = 0;
         cat->vecy = 0;
         cat->pos = {cat->x, cat->y, cat->w, cat->h}; 
@@ -393,16 +409,34 @@
         SDL_Rect cat_rect = cat->pos;
         SDL_Rect frog_rect = frog->pos;
 
-        if(bird->active)     return SDL_HasIntersection(&bird_rect, &cat_rect);
-        if(frog->active)     return SDL_HasIntersection(&frog_rect, &cat_rect);
+        if(bird->active)   
+        {
+            if(SDL_HasIntersection(&bird_rect, &cat_rect)) return true;
+        }  
+        if(frog->active) 
+        {
+            if(SDL_HasIntersection(&frog_rect, &cat_rect)) return true;
+        }
 
-        if((map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+57)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-57)+cat->w)/100]==3))
+        if((map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][(cat->x+LEG_HITBOX_X)/100]==3 || map->maptab[map->activeroom][((cat->y+cat->h-10)/100)][((cat->x-LEG_HITBOX_X)+cat->w)/100]==3))
             return true;
             
         
          return false;
     }
-    
+    void sword_draw(ogcat *cat,map *map,SDL_Renderer *renderer){
+        cat->swordpos={cat->x+cat->w-LEG_HITBOX_X,cat->y,SWORD_W,SWORD_H};
+
+        if(cat->isattacking){
+
+        if(cat->attacktick<=0){
+                cat->attacktick=SWORD_DURATION;
+                cat->isattacking=false;
+        }
+        SDL_RenderCopy(renderer, cat->texture_sword, NULL, &cat->swordpos);
+        cat->attacktick--;
+        }
+    }
     void drawcat(ogcat *cat, SDL_Renderer *renderer,map *map) {
         if(cat->isdying){
                 SDL_RenderCopy(renderer, cat->texture_dead, NULL, &cat->pos);
@@ -444,6 +478,8 @@
         SDL_DestroyTexture(map->elixirtexture);
         SDL_FreeSurface(stats->boxload);
         SDL_DestroyTexture(stats->boxtexture);
+        SDL_DestroyTexture(cat->texture_sword);
+        SDL_FreeSurface(cat->catload_sword);
     }
 
 
@@ -516,13 +552,13 @@
         }
         if (keyboard[SDL_SCANCODE_A]) {
             cat->x -= cat_speed;
-            
-           
         }
         if (keyboard[SDL_SCANCODE_D]) {
             cat->x += cat_speed;
         }
-
+        if (keyboard[SDL_SCANCODE_K]) {
+            cat->isattacking=true;
+        }
         cat->x += cat->vecx;
         cat->y += cat->vecy;    
         cat->pos = {cat->x, cat->y, cat->w, cat->h};
@@ -559,6 +595,7 @@
         
         backgrounddraw(&bg,renderer);
         drawcat(&cat, renderer,&map);
+        sword_draw(&cat,&map,renderer);
         drawmap(&map, renderer,&cat);
         frogdrawnew(&frog,renderer,&map,&cat);
         frogdraw(&frog,renderer);
