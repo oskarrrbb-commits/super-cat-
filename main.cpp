@@ -25,12 +25,21 @@
     #define NUMBER_IN_STATS_SIZE 50
     struct ogcat
     {
-        SDL_Texture* texture=nullptr;
-        SDL_Surface* catload=nullptr;
+        SDL_Texture* texture_stand=nullptr;
+        SDL_Surface* catload_stand=nullptr;
         SDL_Texture* texture_dead=nullptr;
         SDL_Surface* catload_dead=nullptr;
         SDL_Texture* texture_sword=nullptr;
         SDL_Surface* catload_sword=nullptr;      
+        SDL_Texture* texture_left=nullptr;
+        SDL_Surface* catload_left=nullptr;
+        SDL_Texture* texture_right=nullptr;
+        SDL_Surface* catload_right=nullptr;
+        SDL_Texture* texture_walk1=nullptr;
+        SDL_Surface* catload_walk1=nullptr;
+        SDL_Texture* texture_walk2=nullptr;
+        SDL_Surface* catload_walk2=nullptr;
+
         int x=CAT_RESP_X,y=CAT_RESP_Y,w=CAT_W,h=CAT_H;
         SDL_Rect pos{x,y,w,h};
         int vecx, vecy;
@@ -39,6 +48,8 @@
         bool canmove=true;
         bool isattacking=false;
         bool has_sword=false;
+        bool faceleft=false;
+        bool walked=false;
         int attacktick=SWORD_DURATION;
         int swordcooldown=SWORD_COOLDOWN;
         int time_lastjump=0;
@@ -48,6 +59,8 @@
         int godmodetimer=GOD_MODE_TIMER;
         int elixirs=0;
         int hearts=0;
+        int current_step=0;
+        int steptick=0;
         SDL_Rect swordpos{x+w,y,SWORD_W,SWORD_H};
     };
     struct frog
@@ -112,10 +125,10 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0},
                                  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  },
@@ -630,22 +643,52 @@
     }
 
     void catloader(ogcat *cat, SDL_Renderer *renderer) {
-        SDL_Surface *catload = SDL_LoadBMP("assets/cat/ogcat.bmp");
+        SDL_Surface *catload_stand = SDL_LoadBMP("assets/cat/ogcat.bmp");
         SDL_Surface *catload_dead = SDL_LoadBMP("assets/cat/ogcat_dead.bmp");
         SDL_Surface *catload_sword = SDL_LoadBMP("assets/cat/sword.bmp");
-        Uint32 colorkey_1 = SDL_MapRGB(catload->format, 0, 255, 0);
+        SDL_Surface *catload_left = SDL_LoadBMP("assets/cat/ogcat_left.bmp");
+        SDL_Surface *catload_right = SDL_LoadBMP("assets/cat/ogcat_right.bmp");
+        SDL_Surface *catload_walk1 = SDL_LoadBMP("assets/cat/walk1.bmp");
+        SDL_Surface *catload_walk2 = SDL_LoadBMP("assets/cat/walk2.bmp");
+
+        Uint32 colorkey_1 = SDL_MapRGB(catload_stand->format, 0, 255, 0);
         Uint32 colorkey_2 = SDL_MapRGB(catload_dead->format, 0, 255, 0);
         Uint32 colorkey_3 = SDL_MapRGB(catload_sword->format, 0, 255, 0);
+        Uint32 colorkey_4 = SDL_MapRGB(catload_left->format, 0, 255, 0);
+        Uint32 colorkey_5 = SDL_MapRGB(catload_right->format, 0, 255, 0);
+        Uint32 colorkey_6 = SDL_MapRGB(catload_walk1->format, 0, 255, 0);
+        Uint32 colorkey_7 = SDL_MapRGB(catload_walk2->format, 0, 255, 0);
 
-        SDL_SetColorKey(catload, SDL_TRUE, colorkey_1);
+        SDL_SetColorKey(catload_stand, SDL_TRUE, colorkey_1);
         SDL_SetColorKey(catload_dead, SDL_TRUE, colorkey_2);
         SDL_SetColorKey(catload_sword, SDL_TRUE, colorkey_3);
-        cat->catload = catload;
-        cat->texture = SDL_CreateTextureFromSurface(renderer, cat->catload);
+        SDL_SetColorKey(catload_left, SDL_TRUE, colorkey_4);
+        SDL_SetColorKey(catload_right, SDL_TRUE, colorkey_5);
+        SDL_SetColorKey(catload_walk1, SDL_TRUE, colorkey_6);
+        SDL_SetColorKey(catload_walk2, SDL_TRUE, colorkey_7);
+
+
+        cat->catload_stand = catload_stand;
+        cat->texture_stand = SDL_CreateTextureFromSurface(renderer, cat->catload_stand);
+
         cat->catload_dead = catload_dead;
         cat->texture_dead = SDL_CreateTextureFromSurface(renderer, cat->catload_dead);
+
         cat->catload_sword = catload_sword;
         cat->texture_sword = SDL_CreateTextureFromSurface(renderer, cat->catload_sword);
+
+        cat->catload_left = catload_left;
+        cat->texture_left = SDL_CreateTextureFromSurface(renderer, cat->catload_left);
+
+        cat->catload_right = catload_right;
+        cat->texture_right = SDL_CreateTextureFromSurface(renderer, cat->catload_right);
+
+        cat->catload_walk1 = catload_walk1;
+        cat->texture_walk1 = SDL_CreateTextureFromSurface(renderer, cat->catload_walk1);
+
+        cat->catload_walk2 = catload_walk2;
+        cat->texture_walk2 = SDL_CreateTextureFromSurface(renderer, cat->catload_walk2);
+
         cat->vecx = 0;
         cat->vecy = 0;
         cat->pos = {cat->x, cat->y, cat->w, cat->h}; 
@@ -729,15 +772,55 @@
                 cat->vecy = 0;       
              }
         }else{
-        SDL_RenderCopy(renderer, cat->texture, NULL, &cat->pos);
+            if(!catcollision_down(cat,map)){
+                if(cat->faceleft){
+
+                            SDL_RenderCopy(renderer, cat->texture_left, NULL, &cat->pos);
+
+                }else       SDL_RenderCopy(renderer, cat->texture_right, NULL, &cat->pos);
+            }else{
+                if(cat->walked)
+                {
+
+                if(cat->steptick>=0) cat->current_step=0;
+                if(cat->steptick>=4) cat->current_step=1;
+                if(cat->steptick>=8) cat->current_step=0;
+                if(cat->steptick>=12) cat->current_step=2; 
+
+                if(cat->steptick>=16)  cat->steptick=0;
+
+                cat->steptick++;
+
+                switch(cat->current_step){
+                case 0:
+                    SDL_RenderCopy(renderer, cat->texture_stand, NULL, &cat->pos);
+                    break;
+                
+                case 1:
+                SDL_RenderCopy(renderer, cat->texture_walk1, NULL, &cat->pos);
+                    break;
+
+                    case 2:
+                SDL_RenderCopy(renderer, cat->texture_walk2, NULL, &cat->pos);
+                    break;
+                }
+
+                }else 
+                {
+                    SDL_RenderCopy(renderer, cat->texture_stand, NULL, &cat->pos);
+                    cat->steptick=0;
+                    cat->current_step=0;
+                }
+
+            }
         }
         if(cat->godmodetimer>0) cat->godmodetimer--;
         if(cat->godmodetimer==0) cat->godmode=false;
     }
     void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats) {
-        SDL_DestroyTexture(cat->texture);
+        SDL_DestroyTexture(cat->texture_stand);
         SDL_DestroyTexture(cat->texture_dead);
-        SDL_FreeSurface(cat->catload);
+        SDL_FreeSurface(cat->catload_stand);
         SDL_FreeSurface(cat->catload_dead);
         SDL_FreeSurface(map->dirtload);
         SDL_DestroyTexture(map->dirttexture);
@@ -773,6 +856,14 @@
         SDL_DestroyTexture(stats->notexture);
         SDL_FreeSurface(stats->yesload);
         SDL_DestroyTexture(stats->yestexture);
+        SDL_FreeSurface(cat->catload_left);
+        SDL_DestroyTexture(cat->texture_left);
+        SDL_FreeSurface(cat->catload_right);
+        SDL_DestroyTexture(cat->texture_right);
+        SDL_FreeSurface(cat->catload_walk1);
+        SDL_DestroyTexture(cat->texture_walk1);
+        SDL_FreeSurface(cat->catload_walk2);
+        SDL_DestroyTexture(cat->texture_walk2);
     }
 
 
@@ -839,15 +930,21 @@
         
         cat_death_check(cat,map,bird,frog);
         
+        cat->walked=false;
+
         const Uint8* keyboard = SDL_GetKeyboardState(NULL);
         if ((keyboard[SDL_SCANCODE_SPACE])) {
             catjump(cat,map);
         }
         if (keyboard[SDL_SCANCODE_A]) {
             cat->x -= cat_speed;
+            cat->faceleft=true;
+            cat->walked=true;
         }
         if (keyboard[SDL_SCANCODE_D]) {
             cat->x += cat_speed;
+            cat->faceleft=false;
+            cat->walked=true;
         }
         if (keyboard[SDL_SCANCODE_K]) {
             if(cat->has_sword&&cat->swordcooldown<=0)
