@@ -7,15 +7,15 @@
     #define mapx 20
     #define mapy 12
     #define rooms 11
-    #define Lifes 3
+    #define Lifes 7
     #define cat_speed 10
     #define LEG_HITBOX_X 57
     #define birdspeed 20
     #define enable_bird_to_spawn_since_map 4
     #define DEATH_TIMER 60
     #define GOD_MODE_TIMER 100
-    #define CAT_RESP_X 100
-    #define CAT_RESP_Y 100
+    #define CAT_RESP_X 0
+    #define CAT_RESP_Y 200
     #define CAT_W 200
     #define CAT_H 200
     #define SWORD_W 100
@@ -78,6 +78,8 @@
         bool jump=true;
         bool iskingfrog=false;
         int tileX,tileY;
+        int oldtileX,oldtileY;
+        bool swap=false;
 
     };
     struct bird
@@ -115,6 +117,8 @@
         SDL_Surface* sign3load=nullptr;
         SDL_Texture* sign4texture=nullptr;
         SDL_Surface* sign4load=nullptr;
+        SDL_Texture* ladybugtexture=nullptr;
+        SDL_Surface* ladybugload=nullptr;
         /*
         0-air
         1-dirt
@@ -124,7 +128,9 @@
         5-kingfrog
         6-heart
         8-elixir
-        9-sword   
+        9-sword  
+        67-ladybug
+        11,12,13,14-signs 
         */    
 
         /*
@@ -145,17 +151,17 @@
         */
         int maptab[rooms][mapy][mapx]={
                                  {
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,3,3,3,0,0,0,0,3,5,0,0,3,0,0,0,2},
-                                 {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  },
                                  {
@@ -235,7 +241,7 @@
                                  {0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,0,0,3,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {0,0,1,1,1,1,1,1,0,0,1,0,0,0,0,0,0,0,0,0},
+                                 {0,0,1,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,0,0},
                                  {0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {0,0,2,0,8,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0},
                                  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
@@ -293,7 +299,7 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,3,3,3,0,0,0,0,3,5,0,0,3,0,0,0,2},
+                                 {0,0,0,0,3,3,3,0,0,0,0,3,5,0,0,3,0,0,67,2},
                                  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  }
@@ -302,6 +308,8 @@
 
         int activeroom=0;
         bool swapped=false;
+        SDL_Rect ladybug_pos={0,0,0,0};
+
     };
     struct background
     {
@@ -475,6 +483,11 @@
         Uint32 colorkey_8 = SDL_MapRGB(map->sign4load->format, 0, 255, 0);
         SDL_SetColorKey(map->sign4load, SDL_TRUE, colorkey_8);
         map->sign4texture = SDL_CreateTextureFromSurface(renderer, map->sign4load);
+
+        map->ladybugload=SDL_LoadBMP("assets/map/ladybug.bmp");
+        Uint32 colorkey_9 = SDL_MapRGB(map->ladybugload->format, 0, 255, 0);
+        SDL_SetColorKey(map->ladybugload, SDL_TRUE, colorkey_9);
+        map->ladybugtexture = SDL_CreateTextureFromSurface(renderer, map->ladybugload);
     }
     void frogloader(frog *frog, SDL_Renderer *renderer) {
         frog->frogload=SDL_LoadBMP("assets/frog/frog.bmp");
@@ -612,17 +625,28 @@
                     for(int j=0;j<mapx;j++){
                            
                             if(map->maptab[map->activeroom][i][j]==4||map->maptab[map->activeroom][i][j]==5){
-                                frog->tileX=j;
-                                frog->tileY=i;
-                                if(frog->active){
-                                    return;
-                                }
                                 if(map->maptab[map->activeroom][i][j]==5){
                                     frog->iskingfrog=true;
                                 }else{
                                 frog->iskingfrog=false;
 
                                 }
+                                
+                                frog->tileX=j;
+                                frog->tileY=i;
+
+                                if(frog->tileX!=frog->oldtileX||frog->tileY!=frog->oldtileY){
+
+                                }else{
+
+                                    if(frog->active||frog->swap){
+                                    frog->swap=false;
+                                    return;
+                                }
+                                }
+                               
+                                frog->oldtileX=j;
+                                frog->oldtileY=i;
                                 frog->x=j*100;
                                 frog->y=i*100;
                                 frog->old_y=frog->y;
@@ -709,6 +733,11 @@
                             if(map->maptab[map->activeroom][i][j]==14){
                                   SDL_Rect pos{j*100,i*100,100,100};
                                   SDL_RenderCopy(renderer, map->sign4texture, NULL, &pos);
+                            }
+                            if(map->maptab[map->activeroom][i][j]==67){
+                                  SDL_Rect pos{j*100,i*100,100,100};
+                                  SDL_RenderCopy(renderer, map->ladybugtexture, NULL, &pos);
+                                  map->ladybug_pos={j*100,i*100,100,100};
                             }
                     }
                 }
@@ -947,6 +976,8 @@
         SDL_DestroyTexture(map->sign3texture);
         SDL_FreeSurface(map->sign4load);
         SDL_DestroyTexture(map->sign4texture);
+        SDL_FreeSurface(map->ladybugload);
+        SDL_DestroyTexture(map->ladybugtexture);
     }
 
 
@@ -987,7 +1018,12 @@
         }
 
     }
-
+    bool game_won(ogcat *cat,map *map){
+        if(SDL_HasIntersection(&cat->pos,&map->ladybug_pos)&&cat->elixirs==3&&cat->hearts==3){
+            return true;
+        }
+        return false;
+    }
     bool game_over(ogcat *cat){
         if(cat->lifes<=-1){
             return true;
@@ -1080,6 +1116,13 @@
 
 
         if(game_over(&cat)){
+                        printf("LOST");
+
+            break;
+        }
+
+        if(game_won(&cat,&map)){
+            printf("WON");
             break;
         }
         SDL_Delay(30);
