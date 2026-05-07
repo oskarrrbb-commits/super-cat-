@@ -3,6 +3,7 @@
     #include <conio.h>
     #include <cstdlib>
     #include <time.h>
+    #include <SDL2/SDL_mixer.h>
 
     #define mapx 20
     #define mapy 12
@@ -338,10 +339,18 @@
         SDL_Texture* nr3texture=nullptr;
         SDL_Surface* nr3load=nullptr;        
     };
-    struct intro{
+    struct music{
 
+        Mix_Music* inLevelMusic = nullptr;
+        Mix_Music* intromusic = nullptr;
 
     };
+    void musicloader(music *music) {
+        music->inLevelMusic = Mix_LoadMUS("assets/sound/3.mp3");
+        music->intromusic = Mix_LoadMUS("assets/sound/1.mp3");
+
+        
+    }
     void Statsloader(Stats *stats, SDL_Renderer *renderer) {
         stats->boxload=SDL_LoadBMP("assets/map/stats.bmp");
         stats->boxtexture = SDL_CreateTextureFromSurface(renderer, stats->boxload);
@@ -925,7 +934,7 @@
         if(cat->godmodetimer>0) cat->godmodetimer--;
         if(cat->godmodetimer==0) cat->godmode=false;
     }
-    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats) {
+    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats,music *music){ 
         SDL_DestroyTexture(cat->texture_stand);
         SDL_DestroyTexture(cat->texture_dead);
         SDL_FreeSurface(cat->catload_stand);
@@ -982,6 +991,7 @@
         SDL_DestroyTexture(map->sign4texture);
         SDL_FreeSurface(map->ladybugload);
         SDL_DestroyTexture(map->ladybugtexture);
+        Mix_FreeMusic(music->inLevelMusic);
     }
 
 
@@ -1079,7 +1089,11 @@
     }
     int main(int argv, char **args) {
         SDL_Init(SDL_INIT_VIDEO);
-        SDL_Window *window = SDL_CreateWindow("SDL2 okno", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 2000,1200,0);
+        SDL_Init(SDL_INIT_AUDIO);
+        Mix_Init(MIX_INIT_MP3);
+        Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
+        Mix_VolumeMusic(40);
+        SDL_Window *window = SDL_CreateWindow("SUPER CAT", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 2000,1200,0);
         SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
         ogcat cat;
         map map;
@@ -1087,14 +1101,24 @@
         frog frog;
         bird bird;
         Stats stats;
+        music music;
+        musicloader(&music);
         catloader(&cat,renderer);
         maploader(&map,renderer);
         backgroundloader(&bg,renderer);
         frogloader(&frog,renderer);
         birdloader(&bird,renderer);
         Statsloader(&stats,renderer);
+
+        Mix_PlayMusic(music.intromusic, -1);
+
+        SDL_Delay(5000);
+        Mix_PlayMusic(music.inLevelMusic, -1);
+        
+
         SDL_Event e;
         srand(time(NULL));
+        Mix_PlayMusic(music.inLevelMusic, -1);
         while (true)
         {
         while (SDL_PollEvent(&e))
@@ -1132,8 +1156,9 @@
         SDL_Delay(30);
     }
         SDL_DestroyWindow(window);
-        destroyer(&cat,&map,&bg,&frog,&bird,&stats);
-
+        destroyer(&cat,&map,&bg,&frog,&bird,&stats,&music);
+        Mix_CloseAudio();
+        Mix_Quit();
         SDL_Quit();
         return 1;
     }
