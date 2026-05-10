@@ -300,7 +300,7 @@
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
                                  {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2},
-                                 {0,0,0,0,3,3,3,0,0,0,0,3,5,0,0,3,0,0,67,2},
+                                 {0,0,0,0,3,3,3,0,0,0,0,3,5,0,0,0,0,0,67,2},
                                  {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  }
@@ -343,12 +343,48 @@
 
         Mix_Music* inLevelMusic = nullptr;
         Mix_Music* intromusic = nullptr;
+        Mix_Music* intromusic2 = nullptr;
+        Mix_Music* winmusic = nullptr;
 
     };
+    struct intro{
+        SDL_Texture* intro1texture=nullptr;
+        SDL_Surface* intro1load=nullptr;     
+        SDL_Texture* b1texture=nullptr;
+        SDL_Surface* b1load=nullptr;
+        SDL_Texture* controlstexture=nullptr;
+        SDL_Surface* controlsload=nullptr; 
+        SDL_Texture* intro2texture=nullptr;
+        SDL_Surface* intro2load=nullptr;   
+        SDL_Texture* wontexture=nullptr;
+        SDL_Surface* wonload=nullptr;            
+
+    };
+    void introloader(intro* intro,SDL_Renderer *renderer){
+        intro->intro1load=SDL_LoadBMP("assets/intro/supercat.bmp");
+        intro->intro1texture=SDL_CreateTextureFromSurface(renderer, intro->intro1load);
+
+        intro->b1load=SDL_LoadBMP("assets/intro/b1.bmp");
+        intro->b1texture=SDL_CreateTextureFromSurface(renderer, intro->b1load);
+
+        intro->controlsload=SDL_LoadBMP("assets/intro/controls.bmp");
+        intro->controlstexture=SDL_CreateTextureFromSurface(renderer, intro->controlsload);
+
+        intro->intro2load=SDL_LoadBMP("assets/intro/intro.bmp");
+        intro->intro2texture=SDL_CreateTextureFromSurface(renderer, intro->intro2load);
+
+        intro->wonload=SDL_LoadBMP("assets/intro/won.bmp");
+        intro->wontexture=SDL_CreateTextureFromSurface(renderer, intro->wonload);
+
+    }
     void musicloader(music *music) {
         music->inLevelMusic = Mix_LoadMUS("assets/sound/3.mp3");
         music->intromusic = Mix_LoadMUS("assets/sound/1.mp3");
-
+        music->intromusic2 = Mix_LoadMUS("assets/sound/2.mp3");
+        music->winmusic = Mix_LoadMUS("assets/sound/slaves.mp3");
+        if (!music->winmusic) {
+    printf("Mix_LoadMUS Error: %s\n", Mix_GetError());
+}
         
     }
     void Statsloader(Stats *stats, SDL_Renderer *renderer) {
@@ -934,7 +970,7 @@
         if(cat->godmodetimer>0) cat->godmodetimer--;
         if(cat->godmodetimer==0) cat->godmode=false;
     }
-    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats,music *music){ 
+    void destroyer(ogcat *cat,map *map, background *bg,frog *frog,bird *bird,Stats *stats,music *music,intro *intro){ 
         SDL_DestroyTexture(cat->texture_stand);
         SDL_DestroyTexture(cat->texture_dead);
         SDL_FreeSurface(cat->catload_stand);
@@ -992,6 +1028,16 @@
         SDL_FreeSurface(map->ladybugload);
         SDL_DestroyTexture(map->ladybugtexture);
         Mix_FreeMusic(music->inLevelMusic);
+        Mix_FreeMusic(music->intromusic2);
+        SDL_DestroyTexture(intro->b1texture);
+        SDL_FreeSurface(intro->b1load);
+        SDL_DestroyTexture(intro->intro1texture);
+        SDL_FreeSurface(intro->intro1load);
+        SDL_DestroyTexture(intro->intro2texture);
+        SDL_FreeSurface(intro->intro2load);
+        SDL_DestroyTexture(intro->controlstexture);
+        SDL_FreeSurface(intro->controlsload);
+        Mix_FreeMusic(music->winmusic);
     }
 
 
@@ -1087,6 +1133,32 @@
         cat->y += cat->vecy;    
         cat->pos = {cat->x, cat->y, cat->w, cat->h};
     }
+    void fadein(SDL_Texture* texture, SDL_Renderer* renderer){
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+        for (int i = 0; i <= 255; i += 5) {
+        SDL_SetTextureAlphaMod(texture, i);
+        SDL_RenderClear(renderer); 
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(50); 
+        }
+    }
+    void fadeout(SDL_Texture* texture, SDL_Renderer* renderer){
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+        for (int i = 255; i >= 0; i -= 5) {
+        SDL_SetTextureAlphaMod(texture, i);
+        SDL_RenderClear(renderer); 
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(50); 
+        }
+    }
+    void wait()
+     { 
+        SDL_Event e;
+         while (SDL_WaitEvent(&e) && e.type != SDL_KEYDOWN && e.type != SDL_QUIT);
+        
+        }
     int main(int argv, char **args) {
         SDL_Init(SDL_INIT_VIDEO);
         SDL_Init(SDL_INIT_AUDIO);
@@ -1102,6 +1174,9 @@
         bird bird;
         Stats stats;
         music music;
+        intro intro;
+
+        introloader(&intro,renderer);
         musicloader(&music);
         catloader(&cat,renderer);
         maploader(&map,renderer);
@@ -1110,15 +1185,30 @@
         birdloader(&bird,renderer);
         Statsloader(&stats,renderer);
 
+        
+                    
+        
         Mix_PlayMusic(music.intromusic, -1);
-
-        SDL_Delay(5000);
+        fadein(intro.intro1texture,renderer);
+        SDL_Delay(1000);
+        fadeout(intro.intro1texture,renderer);
+        fadein(intro.b1texture,renderer);
+        wait();
+        fadeout(intro.b1texture,renderer);
+        fadein(intro.controlstexture,renderer);
+        SDL_Delay(1000);
+        fadeout(intro.controlstexture,renderer);
+        Mix_PlayMusic(music.intromusic2, -1);
+        fadein(intro.intro2texture,renderer);
+        wait();
         Mix_PlayMusic(music.inLevelMusic, -1);
+        fadeout(intro.intro2texture,renderer);
+
         
 
         SDL_Event e;
         srand(time(NULL));
-        Mix_PlayMusic(music.inLevelMusic, -1);
+        
         while (true)
         {
         while (SDL_PollEvent(&e))
@@ -1144,19 +1234,24 @@
 
 
         if(game_over(&cat)){
-                        printf("LOST");
-
+            
+           
             break;
         }
 
         if(game_won(&cat,&map)){
             printf("WON");
+            SDL_RenderClear(renderer);
+            SDL_Rect pos{0,0,2000,1200};
+            SDL_RenderCopy(renderer, intro.wontexture, NULL, &pos);
+            Mix_PlayMusic(music.winmusic, -1);
+            SDL_RenderPresent(renderer);
             break;
         }
         SDL_Delay(30);
     }
         SDL_DestroyWindow(window);
-        destroyer(&cat,&map,&bg,&frog,&bird,&stats,&music);
+        destroyer(&cat,&map,&bg,&frog,&bird,&stats,&music,&intro);
         Mix_CloseAudio();
         Mix_Quit();
         SDL_Quit();
