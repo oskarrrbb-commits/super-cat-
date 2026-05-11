@@ -58,8 +58,8 @@
         int death_timer=DEATH_TIMER;
         int godmode=false;
         int godmodetimer=GOD_MODE_TIMER;
-        int elixirs=0;
-        int hearts=0;
+        int elixirs=2;
+        int hearts=3;
         int current_step=0;
         int steptick=0;
         SDL_Rect swordpos{x+w,y,SWORD_W,SWORD_H};
@@ -161,7 +161,7 @@
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {2,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+                                 {2,0,0,0,0,11,0,0,0,0,8,0,0,0,0,67,0,0,0,0},
                                  {2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  },
@@ -1240,12 +1240,12 @@
         }
 
         if(game_won(&cat,&map)){
-            printf("WON");
             SDL_RenderClear(renderer);
             SDL_Rect pos{0,0,2000,1200};
             SDL_RenderCopy(renderer, intro.wontexture, NULL, &pos);
             Mix_PlayMusic(music.winmusic, -1);
             SDL_RenderPresent(renderer);
+            SDL_Delay(40000);
             break;
         }
         SDL_Delay(30);
