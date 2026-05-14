@@ -58,8 +58,8 @@
         int death_timer=DEATH_TIMER;
         int godmode=false;
         int godmodetimer=GOD_MODE_TIMER;
-        int elixirs=2;
-        int hearts=3;
+        int elixirs=0;
+        int hearts=0;
         int current_step=0;
         int steptick=0;
         SDL_Rect swordpos{x+w,y,SWORD_W,SWORD_H};
@@ -161,7 +161,7 @@
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
-                                 {2,0,0,0,0,11,0,0,0,0,8,0,0,0,0,67,0,0,0,0},
+                                 {2,0,0,0,0,11,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
                                  {2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
                                  {2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2}
                                  },
@@ -1165,8 +1165,11 @@
         Mix_Init(MIX_INIT_MP3);
         Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
         Mix_VolumeMusic(40);
-        SDL_Window *window = SDL_CreateWindow("SUPER CAT", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 2000,1200,0);
-        SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
+        SDL_DisplayMode dm;
+        SDL_GetCurrentDisplayMode(0, &dm);
+        SDL_Window *window = SDL_CreateWindow("SUPER CAT", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, dm.w,dm.h,SDL_WINDOW_SHOWN);
+        SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+        SDL_RenderSetLogicalSize(renderer, 2000, 1200);
         ogcat cat;
         map map;
         background bg;
@@ -1208,14 +1211,17 @@
 
         SDL_Event e;
         srand(time(NULL));
-        
-        while (true)
+        bool running=true;
+
+        while (running)
         {
         while (SDL_PollEvent(&e))
         {
             
-            if (e.type == SDL_QUIT)
-                return 0;
+            if (e.type == SDL_QUIT){
+                running=false;
+            }
+                
                 
         }
         SDL_RenderClear(renderer);
