@@ -1,3 +1,13 @@
-
 *.obj
 *.o
+
+# build output
+*.exe
+main
+
+# runtime DLLs (copy them next to main.exe yourself)
+*.dll
+
+# SDL2 / SDL2_mixer dev files (download separately, see README)
+src/include/
+src/lib/
